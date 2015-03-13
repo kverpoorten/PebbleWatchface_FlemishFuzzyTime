@@ -4,20 +4,18 @@
         ""
     ],
     "companyName": "MaikJoosten & Kristof Verpoorten",
-    "longName": "Flemish Fuzzy Time",
+    "longName": "Flemish Fuzzy Time with bluetooth status check",
     "projectType": "native",
     "resources": {
         "media": [
             {
-                "characterRegex": "[a-z]",
-                "compatibility": "2.7",
+                "characterRegex": "[a-z ]",
                 "file": "fonts/Georgia.ttf",
                 "name": "FONT_40",
                 "type": "font"
             },
             {
                 "characterRegex": "[a-z ]",
-                "compatibility": "2.7",
                 "file": "fonts/GeorgiaSmall.ttf",
                 "name": "FONT_30",
                 "type": "font"
