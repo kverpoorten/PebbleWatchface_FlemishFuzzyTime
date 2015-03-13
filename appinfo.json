@@ -1,0 +1,35 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "MaikJoosten & Kristof Verpoorten",
+    "longName": "Flemish Fuzzy Time",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "characterRegex": "[a-z]",
+                "compatibility": "2.7",
+                "file": "fonts/Georgia.ttf",
+                "name": "FONT_40",
+                "type": "font"
+            },
+            {
+                "characterRegex": "[a-z ]",
+                "compatibility": "2.7",
+                "file": "fonts/GeorgiaSmall.ttf",
+                "name": "FONT_30",
+                "type": "font"
+            }
+        ]
+    },
+    "sdkVersion": "2",
+    "shortName": "Flemish Fuzzy Time",
+    "uuid": "09d04612-c1fa-4fc4-8238-6b9327a1e576",
+    "versionCode": 2,
+    "versionLabel": "2.0",
+    "watchapp": {
+        "watchface": true
+    }
+}
