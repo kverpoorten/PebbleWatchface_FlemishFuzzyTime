@@ -1,9 +1,10 @@
-#include "pebble.h"
-#include "pebble_fonts.h"
+#include <pebble.h>
+#include <pebble_fonts.h>
 
 // If this is defined, the face will use minutes and seconds instead of hours and minutes
 // to make debugging faster.
-// #define DEBUG_FAST
+//#define DEBUG_FAST
+#define CUSTOM_FONTS
 
 static Window *window;
 static GFont font_small;
@@ -13,6 +14,7 @@ static InverterLayer *btConnectionInverter;
 static PropertyAnimation *inverter_anim;
 
 typedef struct {
+  GRect frame;
 	TextLayer * layer;
 	PropertyAnimation *anim;
 	const char * text;
@@ -24,17 +26,42 @@ static word_t first_word_between;
 static word_t second_word;
 static word_t second_word_between;
 static word_t third_word;
+
 static const char *hours[] = {"twaalf","een","twee","drie","vier","vijf","zes","zeven","acht","negen","tien","elf","twaalf"};
 
-TextLayer *text_layer_setup(Window * window, GRect frame, GFont font) {
+TextLayer *text_layer_setup(Window * window, GRect frame, GFont font, GTextAlignment alignment) {
 	TextLayer *layer = text_layer_create(frame);
 	text_layer_set_text(layer, "");
 	text_layer_set_text_color(layer, GColorWhite);
 	text_layer_set_background_color(layer, GColorClear);
-	text_layer_set_text_alignment(layer, GTextAlignmentCenter);
+	text_layer_set_text_alignment(layer, alignment);
 	text_layer_set_font(layer, font);
 	layer_add_child(window_get_root_layer(window), text_layer_get_layer(layer));
 	return layer;
+}
+
+static void recreate_word_animation(word_t * word) {
+  if (word->anim != NULL) {
+    property_animation_destroy(word->anim);    // destroy the animation if it already exists
+  }
+  
+  // and recreate it
+  GRect frame_right = word->frame;
+	frame_right.origin.x = 150;
+  
+  word->anim = property_animation_create_layer_frame(text_layer_get_layer(word->layer), &frame_right, &word->frame);
+	animation_set_duration(&word->anim->animation, 500);
+	animation_set_curve(&word->anim->animation, AnimationCurveEaseIn);
+}
+
+static void recreate_inverter_layer_animation(GRect *from, GRect *to) {
+  if (inverter_anim != NULL) {
+    property_animation_destroy(inverter_anim);    // destroy the animation if it already exists
+  }
+  
+  inverter_anim = property_animation_create_layer_frame(inverter_layer_get_layer(inverter), from, to);
+	animation_set_duration(&inverter_anim->animation, 500);
+	animation_set_curve(&inverter_anim->animation, AnimationCurveEaseIn);
 }
 
 static const char *hour_string(int h) {
@@ -53,10 +80,13 @@ static const char *min_string(int m) {
 
 static void update_word(word_t * const word) {
 	if(word->text != word->old_text) {
+    // recreate the wordt animation, otherwise we cannot run it more than once
+    recreate_word_animation(word);
+    
 		// Move the layer offscreen before changing text.
 		// Without this, the new text will be visible briefly before the animation starts.
-		layer_set_frame(text_layer_get_layer(word->layer), word->anim->values.from.grect);
-		animation_schedule(&word->anim->animation);
+    layer_set_frame(text_layer_get_layer(word->layer), word->anim->values.from.grect);
+    animation_schedule(&word->anim->animation);
 	}
 	text_layer_set_text(word->layer, word->text);
 }
@@ -67,7 +97,7 @@ static void nederlands_format(int h, int m) {
 	second_word.text = "";
 	second_word_between.text = "";
 	third_word.text = "";
-
+  
 	int unrounded = m;
 	float temp_m = m;
 	temp_m = temp_m / 5;
@@ -102,7 +132,7 @@ static void nederlands_format(int h, int m) {
 	} else if(m > 30) {
 		if(m < 45) {
 			first_word.text = min_string(m - 30);
-			second_word.text = "na half";
+      second_word.text = "na half";
 			third_word.text = hour_string(h + 1);
 		} else {
 			first_word.text = min_string(60 - m);
@@ -112,7 +142,7 @@ static void nederlands_format(int h, int m) {
 	} else {
 		if(m > 15) {
 			first_word.text = min_string(30 - m);
-			second_word.text = "voor half";
+      second_word.text = "voor half";
 			third_word.text = hour_string(h + 1);
 		} else {
 			first_word.text = min_string(m);
@@ -152,8 +182,8 @@ static void nederlands_format(int h, int m) {
 		frame_right.origin.x = 116;
 		break;
 	}
-	inverter_anim->values.from.grect = frame;
-	inverter_anim->values.to.grect = frame_right;
+	
+  recreate_inverter_layer_animation(&frame, &frame_right);
 	animation_schedule(&inverter_anim->animation);
 }
 
@@ -186,18 +216,12 @@ static void handle_bluetooth_connection(bool connected) {
   }
 }
 
-static void text_layer(word_t * word, GRect frame, GFont font) {
-	word->layer = text_layer_setup(window, frame, font);
-
-	GRect frame_right = frame;
-	frame_right.origin.x = 150;
-
-	word->anim = property_animation_create_layer_frame(text_layer_get_layer(word->layer), &frame_right, &frame);
-	animation_set_duration(&word->anim->animation, 500);
-	animation_set_curve(&word->anim->animation, AnimationCurveEaseIn);
+static void text_layer(word_t * word, GRect frame, GFont font, GTextAlignment alignment) {
+	word->layer = text_layer_setup(window, frame, font, alignment);
+  word->frame = frame;
 }
 
-void word_destroy(word_t * word) {
+static void word_destroy(word_t * word) {
 	property_animation_destroy(word->anim);
 	text_layer_destroy(word->layer);
 }
@@ -208,22 +232,23 @@ static void init() {
 	window_stack_push(window, false);
 	window_set_background_color(window, GColorBlack);
 
+#ifdef CUSTOM_FONTS
 	font_big = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_40));
 	font_small = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_30));
+#else
+  font_big = fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD);
+	font_small = fonts_get_system_font(FONT_KEY_GOTHIC_28);
+#endif
 
-	text_layer(&first_word, GRect(0, 12, 143, 49), font_big);
-	text_layer(&second_word, GRect(0, 62, 143, 42), font_small);
-	text_layer(&third_word, GRect(0, 96, 143, 49), font_big);
-
-	text_layer(&first_word_between, GRect(0, 27, 143, 49), font_big);
-	text_layer(&second_word_between, GRect(0, 83, 143, 49), font_big);
+	text_layer(&first_word, GRect(0, 12, 143, 49), font_big, GTextAlignmentCenter);
+	text_layer(&second_word, GRect(0, 62, 143, 42), font_small, GTextAlignmentCenter);
+	text_layer(&third_word, GRect(0, 96, 143, 49), font_big, GTextAlignmentCenter);
+  
+	text_layer(&first_word_between, GRect(0, 27, 143, 49), font_big, GTextAlignmentCenter);
+	text_layer(&second_word_between, GRect(0, 83, 143, 49), font_big, GTextAlignmentCenter);
 
 	inverter = inverter_layer_create(GRect(0, 166, 36, 1));
 	layer_add_child(window_get_root_layer(window), inverter_layer_get_layer(inverter));
-
-	inverter_anim = property_animation_create_layer_frame(inverter_layer_get_layer(inverter), NULL, NULL);
-	animation_set_duration(&inverter_anim->animation, 500);
-	animation_set_curve(&inverter_anim->animation, AnimationCurveEaseIn);
 
 #ifdef DEBUG_FAST
 	tick_timer_service_subscribe(SECOND_UNIT, handle_tick);
@@ -249,11 +274,13 @@ static void deinit() {
 	inverter_layer_destroy(inverter);
 	word_destroy(&second_word_between);
 	word_destroy(&first_word_between);
-	word_destroy(&third_word);
+  word_destroy(&third_word);
 	word_destroy(&second_word);
 	word_destroy(&first_word);
+#ifdef CUSTOM_FONTS
 	fonts_unload_custom_font(font_small);
 	fonts_unload_custom_font(font_big);
+#endif
 	window_destroy(window);
 }
 
