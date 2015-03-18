@@ -233,19 +233,19 @@ static void init() {
 	window_set_background_color(window, GColorBlack);
 
 #ifdef CUSTOM_FONTS
-	font_big = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_40));
+	font_big = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_44));
 	font_small = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_30));
 #else
   font_big = fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD);
 	font_small = fonts_get_system_font(FONT_KEY_GOTHIC_28);
 #endif
 
-	text_layer(&first_word, GRect(0, 12, 143, 49), font_big, GTextAlignmentCenter);
+	text_layer(&first_word, GRect(0, 10, 143, 51), font_big, GTextAlignmentCenter);
 	text_layer(&second_word, GRect(0, 62, 143, 42), font_small, GTextAlignmentCenter);
-	text_layer(&third_word, GRect(0, 96, 143, 49), font_big, GTextAlignmentCenter);
+	text_layer(&third_word, GRect(0, 94, 143, 51), font_big, GTextAlignmentCenter);
   
-	text_layer(&first_word_between, GRect(0, 27, 143, 49), font_big, GTextAlignmentCenter);
-	text_layer(&second_word_between, GRect(0, 83, 143, 49), font_big, GTextAlignmentCenter);
+	text_layer(&first_word_between, GRect(0, 25, 143, 51), font_big, GTextAlignmentCenter);
+	text_layer(&second_word_between, GRect(0, 81, 143, 51), font_big, GTextAlignmentCenter);
 
 	inverter = inverter_layer_create(GRect(0, 166, 36, 1));
 	layer_add_child(window_get_root_layer(window), inverter_layer_get_layer(inverter));
